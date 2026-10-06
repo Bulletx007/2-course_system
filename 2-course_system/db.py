@@ -40,6 +40,18 @@ def search_learners(filters):
     _todo("search_learners")
 
 
+
+def search_learners(filters):
+    sql = "SELECT * FROM learner WHERE 1=1"
+    params = []
+    if filters.get("name"):
+        sql += " AND name LIKE %s"
+        params.append(f"%{filters['name']}%")
+    if filters.get("email"):
+        sql += " AND email = %s"
+        params.append(filters["email"])
+    return run_query(sql, params)
+
 def get_learner(learner_id):
     """ดึง ผู้เรียน 1 รายการตาม learner_id (ใช้ตอนเปิดฟอร์มแก้ไข)"""
     # TODO: SELECT * FROM learner WHERE learner_id = %s แล้วคืนแถวเดียว
