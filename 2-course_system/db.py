@@ -39,8 +39,7 @@ def search_learners(filters):
     # TODO: เขียน SQL ค้นหาแบบยืดหยุ่นตาม filters (ใช้ %s เสมอ)
     _todo("search_learners")
 
-
-
+    # แก้
 def search_learners(filters):
     sql = "SELECT * FROM learner WHERE 1=1"
     params = []
@@ -48,8 +47,8 @@ def search_learners(filters):
         sql += " AND name LIKE %s"
         params.append(f"%{filters['name']}%")
     if filters.get("email"):
-        sql += " AND email = %s"
-        params.append(filters["email"])
+        sql += " AND email LIKE %s"              # เปลี่ยนจาก = เป็น LIKE
+        params.append(f"%{filters['email']}%")   # เติม % ครอบหัวท้าย
     return run_query(sql, params)
 
 def get_learner(learner_id):
@@ -57,11 +56,23 @@ def get_learner(learner_id):
     # TODO: SELECT * FROM learner WHERE learner_id = %s แล้วคืนแถวเดียว
     _todo("get_learner")
 
+    # แก้
+def get_learner(learner_id):
+    sql = "SELECT * FROM learner WHERE learner_id = %s"
+    rows = run_query(sql, (learner_id,))
+    return rows[0] if rows else None
+
 
 def create_learner(data):
     """เพิ่ม ผู้เรียน ใหม่ — data มีคีย์: name, email, join_date"""
     # TODO: INSERT INTO learner (...) VALUES (%s, ...)
     _todo("create_learner")
+
+    # แก้
+def create_learner(data):
+    sql = "INSERT INTO learner (name, email, join_date, member_tier) VALUES (%s, %s, %s, %s)"
+    params = (data.get("name"), data.get("email"), data.get("join_date"), data.get("member_tier", "normal"))
+    return run_command(sql, params)
 
 
 def update_learner(learner_id, data):
@@ -69,11 +80,22 @@ def update_learner(learner_id, data):
     # TODO: UPDATE learner SET ... WHERE learner_id=%s
     _todo("update_learner")
 
+    # แก้
+def update_learner(learner_id, data):
+    sql = "UPDATE learner SET name = %s, email = %s, join_date = %s, member_tier = %s WHERE learner_id = %s"
+    params = (data.get("name"), data.get("email"), data.get("join_date"), data.get("member_tier", "normal"), learner_id)
+    return run_command(sql, params)
 
 def delete_learner(learner_id):
     """ลบ ผู้เรียน ตาม learner_id"""
     # TODO: DELETE FROM learner WHERE learner_id=%s
     _todo("delete_learner")
+
+    # แก้
+def delete_learner(learner_id):
+    sql = "DELETE FROM learner WHERE learner_id = %s"
+    return run_command(sql, (learner_id,))
+
 
 # ---------- คอร์ส (course) ----------
 def search_courses(filters):

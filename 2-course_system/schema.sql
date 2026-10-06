@@ -95,39 +95,38 @@ CREATE TABLE progress (
 
 -- 1. ผู้เรียน (3 คน)
 INSERT INTO learner (name, email, join_date, member_tier) VALUES
-('อลิซ ใจดี',   'alice@example.com', '2025-01-10', 'vip'),
-('บ๊อบ มั่นคง',  'bob@example.com',   '2025-01-15', 'normal'),
-('ชาลี เรียนรู้', 'charlie@example.com','2025-02-01', 'normal');
+('Alice Smith',   'alice@example.com',   '2025-01-10', 'vip'),
+('Bob Johnson',   'bob@example.com',     '2025-01-15', 'normal'),
+('Charlie Brown', 'charlie@example.com', '2025-02-01', 'normal');
 
--- 2. โปรโมชัน (2 โค้ด)
+-- 2. โปรโมชัน (2 โค้ดส่วนลด)
 INSERT INTO promotion (promo_code, discount_pct, start_date, end_date, vip_only) VALUES
 ('NEW2026', 10.00, '2026-01-01', '2026-12-31', 0),
 ('VIP50',   50.00, '2025-01-01', '2026-12-31', 1);
 
 -- 3. คอร์สเรียน (3 คอร์ส: มีวิชาเริ่มต้นและวิชาต่อเนื่อง)
 INSERT INTO course (title, category, price, seat_limit, prerequisite_id) VALUES
-('Python เบื้องต้น', 'Programming', 1500.00, 50, NULL), -- id 1 (เรียนได้เลย)
-('Python ขั้นสูง',  'Programming', 2500.00, 30, 1),    -- id 2 (ต้องผ่าน id 1)
-('ฐานข้อมูล SQL',     'Database',    2000.00, 40, NULL); -- id 3 (เรียนได้เลย)
+('Python Basics',     'Programming', 1500.00, 50, NULL), -- id 1 (เรียนได้เลย ไม่มีเงื่อนไข)
+('Advanced Python',   'Programming', 2500.00, 30, 1),    -- id 2 (ต้องผ่านคอร์ส id 1 ก่อน)
+('Database SQL',      'Database',    2000.00, 40, NULL); -- id 3 (เรียนได้เลย ไม่มีเงื่อนไข)
 
--- 4. บทเรียนย่อย (คอร์สละ 2 บท)
+-- 4. บทเรียนย่อย (ผูกกับแต่ละคอร์ส)
 INSERT INTO lesson (course_id, title, seq_no, duration_min) VALUES
-(1, 'ติดตั้งโปรแกรม', 1, 30),
-(1, 'ตัวแปรพื้นฐาน', 2, 45),
-(2, 'OOP เชิงลึก',  1, 60),
-(3, 'คำสั่ง SELECT', 1, 40);
+(1, 'Installation & Setup', 1, 30),
+(1, 'Variables & Types',    2, 45),
+(2, 'Deep Dive into OOP',   1, 60),
+(3, 'SQL SELECT Statement', 1, 40);
 
--- 5. การลงทะเบียน (คละสถานะ: สำเร็จ, กำลังเรียน, ถอน)
+-- 5. การลงทะเบียน (คละสถานะ: สำเร็จ, กำลังเรียน, ถอนวิชา)
 INSERT INTO enrollment (learner_id, course_id, enroll_date, status, paid_amount) VALUES
 (1, 1, '2025-01-12', 'completed', 1500.00), -- อลิซ จบคอร์ส 1 แล้ว
 (1, 2, '2025-02-01', 'active',    2500.00), -- อลิซ กำลังเรียนคอร์ส 2
 (2, 1, '2025-01-20', 'completed', 1500.00), -- บ๊อบ จบคอร์ส 1 แล้ว
 (3, 3, '2025-02-10', 'dropped',   2000.00); -- ชาลี ถอนคอร์ส SQL
 
--- 6. ความคืบหน้าการเรียน
+-- 6. ความคืบหน้าการเรียน (เช็กสถานะการดูบทเรียน)
 INSERT INTO progress (learner_id, lesson_id, watched, completed_date) VALUES
 (1, 1, 1, '2025-01-13'),
 (1, 2, 1, '2025-01-15'),
 (2, 1, 1, '2025-01-22'),
 (3, 4, 0, NULL);
-
