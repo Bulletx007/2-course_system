@@ -3,7 +3,80 @@
 //  ปรับช่องค้นหา/ฟอร์มได้ที่ตัวแปร ENTITIES ด้านล่าง
 // ============================================================
 const ENTITIES = {
-  "learners": {
+  "lessons": {
+    "label": "บทเรียน",
+    "api": "/api/lessons",
+    "idKey": "lesson_id",
+    "search": [
+      {
+        "key": "title",
+        "label": "ชื่อบทเรียน",
+        "type": "text"
+      }
+    ],
+    "form": [
+      {
+        "key": "course_id",
+        "label": "รหัสคอร์ส",
+        "type": "number"
+      },
+      {
+        "key": "title",
+        "label": "ชื่อบทเรียน",
+        "type": "text"
+      },
+      {
+        "key": "seq_no",
+        "label": "ลำดับบทเรียน",
+        "type": "number"
+      },
+      {
+        "key": "duration_min",
+        "label": "ระยะเวลา (นาที)",
+        "type": "number"
+      }
+    ]
+  },
+  "promotions": {
+    "label": "โปรโมชัน",
+    "api": "/api/promotions",
+    "idKey": "promo_id",
+    "search": [
+      {
+        "key": "promo_code",
+        "label": "โค้ดส่วนลด",
+        "type": "text"
+      }
+    ],
+    "form": [
+      {
+        "key": "promo_code",
+        "label": "โค้ดส่วนลด",
+        "type": "text"
+      },
+      {
+        "key": "discount_pct",
+        "label": "เปอร์เซ็นต์ส่วนลด (%)",
+        "type": "number"
+      },
+      {
+        "key": "start_date",
+        "label": "วันที่เริ่ม",
+        "type": "date"
+      },
+      {
+        "key": "end_date",
+        "label": "วันที่สิ้นสุด",
+        "type": "date"
+      }
+    ]
+  }
+
+
+
+
+
+,"learners": {
     "label": "ผู้เรียน",
     "api": "/api/learners",
     "idKey": "learner_id",

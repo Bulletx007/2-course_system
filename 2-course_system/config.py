@@ -11,3 +11,11 @@ DB_USER = "root"                     # TODO: username ของนิสิต
 DB_PASSWORD = "abcd1234"                 # TODO: password ของนิสิต
 DB_NAME = "project69"              # TODO: ชื่อฐานข้อมูลของนิสิต
 DB_PORT = 3306
+
+
+
+# DB_HOST = "202.28.34.202"               # TODO: host ที่อาจารย์แจกให้
+# DB_USER = "s68011212101"                     # TODO: username ของนิสิต
+# DB_PASSWORD = "s68011212101pwd"                 # TODO: password ของนิสิต
+# DB_NAME = "prymania_s68011212101"              # TODO: ชื่อฐานข้อมูลของนิสิต
+# DB_PORT = 3306

@@ -12,11 +12,24 @@
     <nav><a href="/" class="active">จัดการข้อมูล</a><a href="/report">รายงาน</a></nav>
   </header>
   <main class="container">
-    <div class="tabs">
+    <!-- <div class="tabs">
       <button class="tab active" data-entity="learners">ผู้เรียน</button>
       <button class="tab" data-entity="courses">คอร์ส</button>
       <button class="tab" data-entity="enrollments">การลงทะเบียน</button>
-    </div>
+    </div> -->
+
+    
+<div class="tabs">
+    <button class="tab active" data-entity="learners">ผู้เรียน</button>
+    <button class="tab" data-entity="courses">คอร์ส</button>
+    <button class="tab" data-entity="enrollments">การลงทะเบียน</button>
+    <!-- เพิ่ม 2 บรรทัดนี้ต่อท้าย เพื่อให้ครบทุกตาราง -->
+    <button class="tab" data-entity="lessons">บทเรียน</button>
+    <button class="tab" data-entity="promotions">โปรโมชัน</button>
+</div>
+<!-- -------------------------------------------------------------------------- -->
+
+
     <section class="card">
       <h3>ค้นหา <span id="searchTitle"></span></h3>
       <div id="searchFields" class="search-grid"></div>
