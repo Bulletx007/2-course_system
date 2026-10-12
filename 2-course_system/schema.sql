@@ -15,27 +15,27 @@ DROP TABLE IF EXISTS learner;
 
 
 
--- 2. สร้างตาราง learner
+-- 1. สร้างตาราง learner (join_date ใส่ให้อัตโนมัติ)
 CREATE TABLE learner (
     learner_id  INT AUTO_INCREMENT PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
     email       VARCHAR(100) NOT NULL UNIQUE,
-    join_date   DATE NOT NULL,
+    join_date   DATE NOT NULL DEFAULT (CURRENT_DATE),
     member_tier ENUM('normal','vip') NOT NULL DEFAULT 'normal'
 );
 
--- 3. สร้างตาราง promotion
+-- 2. สร้างตาราง promotion (end_date ตั้งค่าอัตโนมัติเป็น 1 เดือนข้างหน้า หรือเลือกเองได้)
 CREATE TABLE promotion (
     promo_id     INT AUTO_INCREMENT PRIMARY KEY,
     promo_code   VARCHAR(30) NOT NULL UNIQUE,
     discount_pct DECIMAL(5,2) NOT NULL,
-    start_date   DATE NOT NULL,
-    end_date     DATE NOT NULL,
+    start_date   DATE NOT NULL DEFAULT (CURRENT_DATE),
+    end_date     DATE NOT NULL DEFAULT (DATE_ADD(CURRENT_DATE, INTERVAL 1 MONTH)),
     vip_only     TINYINT(1) NOT NULL DEFAULT 0,
     CONSTRAINT chk_promo_pct CHECK (discount_pct >= 0 AND discount_pct <= 100)
 );
 
--- 4. สร้างตาราง course (แก้ไขโดยเอา CHECK ที่พ่วงกับ auto_increment ออก)
+-- 3. สร้างตาราง course (ไม่มีวันที่ ไม่ต้องแก้)
 CREATE TABLE course (
     course_id       INT AUTO_INCREMENT PRIMARY KEY,
     title           VARCHAR(200) NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE course (
         REFERENCES course(course_id) ON DELETE RESTRICT
 );
 
--- 5. สร้างตาราง lesson (อ้างอิง course)
+-- 4. สร้างตาราง lesson (ไม่มีวันที่ ไม่ต้องแก้)
 CREATE TABLE lesson (
     lesson_id    INT AUTO_INCREMENT PRIMARY KEY,
     course_id    INT NOT NULL,
@@ -60,12 +60,12 @@ CREATE TABLE lesson (
         REFERENCES course(course_id) ON DELETE CASCADE
 );
 
--- 6. สร้างตาราง enrollment (อ้างอิง learner, course, promotion)
+-- 5. สร้างตาราง enrollment (enroll_date ใส่ให้อัตโนมัติ)
 CREATE TABLE enrollment (
     enroll_id   INT AUTO_INCREMENT PRIMARY KEY,
     learner_id  INT NOT NULL,
     course_id   INT NOT NULL,
-    enroll_date DATE NOT NULL,
+    enroll_date DATE NOT NULL DEFAULT (CURRENT_DATE),
     status      ENUM('active','completed','dropped') NOT NULL DEFAULT 'active',
     paid_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
     promo_id    INT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE enrollment (
         REFERENCES promotion(promo_id) ON DELETE SET NULL
 );
 
--- 7. สร้างตาราง progress (อ้างอิง learner และ lesson)
+-- 6. สร้างตาราง progress (completed_date ปล่อยว่างไว้ได้เพราะเป็นค่า NULL ตอนยังเรียนไม่จบ)
 CREATE TABLE progress (
     learner_id     INT NOT NULL,
     lesson_id      INT NOT NULL,

@@ -36,76 +36,71 @@ def search_learners(filters):
     """ค้นหา ผู้เรียน ตามเงื่อนไข (name, email)
     คำใบ้: เริ่มจาก sql = "SELECT * FROM learner WHERE 1=1"
     แล้วต่อเงื่อนไขเฉพาะ filter ที่มีค่า (ข้อความใช้ LIKE %s, อื่น ๆ ใช้ = %s)"""
-    # TODO: เขียน SQL ค้นหาแบบยืดหยุ่นตาม filters (ใช้ %s เสมอ)
-    _todo("search_learners")
-
-    # แก้
-def search_learners(filters):
     sql = "SELECT * FROM learner WHERE 1=1"
     params = []
     if filters.get("name"):
         sql += " AND name LIKE %s"
         params.append(f"%{filters['name']}%")
     if filters.get("email"):
-        sql += " AND email LIKE %s"              # เปลี่ยนจาก = เป็น LIKE
-        params.append(f"%{filters['email']}%")   # เติม % ครอบหัวท้าย
+        sql += " AND email LIKE %s"
+        params.append(f"%{filters['email']}%")
     return run_query(sql, params)
 
 def get_learner(learner_id):
     """ดึง ผู้เรียน 1 รายการตาม learner_id (ใช้ตอนเปิดฟอร์มแก้ไข)"""
-    # TODO: SELECT * FROM learner WHERE learner_id = %s แล้วคืนแถวเดียว
-    _todo("get_learner")
-
-    # แก้
-def get_learner(learner_id):
     sql = "SELECT * FROM learner WHERE learner_id = %s"
     rows = run_query(sql, (learner_id,))
     return rows[0] if rows else None
 
 
 def create_learner(data):
-    """เพิ่ม ผู้เรียน ใหม่ — data มีคีย์: name, email, join_date"""
-    # TODO: INSERT INTO learner (...) VALUES (%s, ...)
-    _todo("create_learner")
-
-    # แก้
-def create_learner(data):
-    sql = "INSERT INTO learner (name, email, join_date, member_tier) VALUES (%s, %s, %s, %s)"
-    params = (data.get("name"), data.get("email"), data.get("join_date"), data.get("member_tier", "normal"))
+    """เพิ่ม ผู้เรียน ใหม่ — ตรวจสอบและใส่วันที่สมัครอัตโนมัติถ้าไม่ได้ระบุ"""
+    sql = "INSERT INTO learner (name, email, join_date, member_tier) VALUES (%s, %s, COALESCE(%s, CURDATE()), %s)"
+    params = (
+        data.get("name"), 
+        data.get("email"), 
+        data.get("join_date") or None, 
+        data.get("member_tier", "normal")
+    )
     return run_command(sql, params)
 
 
 def update_learner(learner_id, data):
-    """แก้ไข ผู้เรียน ตาม learner_id"""
-    # TODO: UPDATE learner SET ... WHERE learner_id=%s
-    _todo("update_learner")
+    """แก้ไข ผู้เรียน ตาม learner_id — ตรวจสอบและคงค่า join_date เดิมไว้ถ้าไม่ได้ส่งค่ามาใหม่"""
+    new_join_date = data.get("join_date")
+    
+    # [แก้ไข]: เช็คใน Python ว่าถ้าไม่ได้ส่ง join_date มา ให้ดึงค่าวันที่เดิมจากฐานข้อมูลมาใช้ต่อ ป้องกัน Error 1093 ของ MySQL
+    if not new_join_date:
+        existing = get_learner(learner_id)
+        if existing and existing.get("join_date"):
+            new_join_date = existing["join_date"]
+        else:
+            import datetime
+            new_join_date = datetime.date.today()
 
-    # แก้
-def update_learner(learner_id, data):
-    sql = "UPDATE learner SET name = %s, email = %s, join_date = %s, member_tier = %s WHERE learner_id = %s"
-    params = (data.get("name"), data.get("email"), data.get("join_date"), data.get("member_tier", "normal"), learner_id)
+    sql = """
+        UPDATE learner 
+        SET name = %s, email = %s, join_date = %s, member_tier = %s 
+        WHERE learner_id = %s
+    """
+    params = (
+        data.get("name"), 
+        data.get("email"), 
+        new_join_date, 
+        data.get("member_tier", "normal"), 
+        learner_id
+    )
     return run_command(sql, params)
 
 def delete_learner(learner_id):
     """ลบ ผู้เรียน ตาม learner_id"""
-    # TODO: DELETE FROM learner WHERE learner_id=%s
-    _todo("delete_learner")
-
-    # แก้
-def delete_learner(learner_id):
     sql = "DELETE FROM learner WHERE learner_id = %s"
     return run_command(sql, (learner_id,))
 
 
 # ---------- คอร์ส (course) ----------
 def search_courses(filters):
-    """ค้นหา คอร์ส ตามเงื่อนไข (title, category)
-    คำใบ้: เริ่มจาก sql = "SELECT * FROM course WHERE 1=1"
-    แล้วต่อเงื่อนไขเฉพาะ filter ที่มีค่า (ข้อความใช้ LIKE %s, อื่น ๆ ใช้ = %s)"""
-    # TODO: เขียน SQL ค้นหาแบบยืดหยุ่นตาม filters (ใช้ %s เสมอ)
-    _todo("search_courses")
-  # แก้
-def search_courses(filters):
+    """ค้นหา คอร์ส ตามเงื่อนไข (title, category)"""
     sql = "SELECT * FROM course WHERE 1=1"
     params = []
     if filters.get("title"):
@@ -119,11 +114,6 @@ def search_courses(filters):
 
 def get_course(course_id):
     """ดึง คอร์ส 1 รายการตาม course_id (ใช้ตอนเปิดฟอร์มแก้ไข)"""
-    # TODO: SELECT * FROM course WHERE course_id = %s แล้วคืนแถวเดียว
-    _todo("get_course")
-
-    # แก้
-def get_course(course_id):
     sql = "SELECT * FROM course WHERE course_id = %s"
     rows = run_query(sql, (course_id,))
     return rows[0] if rows else None
@@ -131,11 +121,6 @@ def get_course(course_id):
 
 def create_course(data):
     """เพิ่ม คอร์ส ใหม่ — data มีคีย์: title, category, price, prerequisite_id"""
-    # TODO: INSERT INTO course (...) VALUES (%s, ...)
-    _todo("create_course")
-
-    # แก้
-def create_course(data):
     sql = "INSERT INTO course (title, category, price, seat_limit, prerequisite_id) VALUES (%s, %s, %s, %s, %s)"
     params = (
         data.get("title"),
@@ -148,11 +133,6 @@ def create_course(data):
 
 def update_course(course_id, data):
     """แก้ไข คอร์ส ตาม course_id"""
-    # TODO: UPDATE course SET ... WHERE course_id=%s
-    _todo("update_course")
-
-    # แก้
-def update_course(course_id, data):
     sql = "UPDATE course SET title = %s, category = %s, price = %s, seat_limit = %s, prerequisite_id = %s WHERE course_id = %s"
     params = (
         data.get("title"),
@@ -166,24 +146,13 @@ def update_course(course_id, data):
 
 def delete_course(course_id):
     """ลบ คอร์ส ตาม course_id"""
-    # TODO: DELETE FROM course WHERE course_id=%s
-    _todo("delete_course")
-
-    # แก้
-def delete_course(course_id):
     sql = "DELETE FROM course WHERE course_id = %s"
     return run_command(sql, (course_id,))
 
+
 # ---------- การลงทะเบียน (enrollment) ----------
 def search_enrollments(filters):
-    """ค้นหา การลงทะเบียน ตามเงื่อนไข (learner_id, course_id, status)
-    คำใบ้: เริ่มจาก sql = "SELECT * FROM enrollment WHERE 1=1"
-    แล้วต่อเงื่อนไขเฉพาะ filter ที่มีค่า (ข้อความใช้ LIKE %s, อื่น ๆ ใช้ = %s)"""
-    # TODO: เขียน SQL ค้นหาแบบยืดหยุ่นตาม filters (ใช้ %s เสมอ)
-    _todo("search_enrollments")
-
-    # แก้
-def search_enrollments(filters):
+    """ค้นหา การลงทะเบียน ตามเงื่อนไข (learner_id, course_id, status)"""
     sql = "SELECT * FROM enrollment WHERE 1=1"
     params = []
     if filters.get("learner_id"):
@@ -199,55 +168,82 @@ def search_enrollments(filters):
 
 def get_enrollment(enroll_id):
     """ดึง การลงทะเบียน 1 รายการตาม enroll_id (ใช้ตอนเปิดฟอร์มแก้ไข)"""
-    # TODO: SELECT * FROM enrollment WHERE enroll_id = %s แล้วคืนแถวเดียว
-    _todo("get_enrollment")
-    # แก้
-def get_enrollment(enroll_id):
     sql = "SELECT * FROM enrollment WHERE enroll_id = %s"
     rows = run_query(sql, (enroll_id,))
     return rows[0] if rows else None
 
 
 def create_enrollment(data):
-    """เพิ่ม การลงทะเบียน ใหม่ — data มีคีย์: learner_id, course_id, enroll_date, status"""
-    # TODO: INSERT INTO enrollment (...) VALUES (%s, ...)
-    _todo("create_enrollment")
+    """เพิ่ม การลงทะเบียน ใหม่ — แปลง promo_code เป็น promo_id, คำนวณราคา, และปล่อย enroll_date ให้ใช้ค่าปัจจุบันอัตโนมัติ"""
+    learner_id = data.get("learner_id")
+    course_id = data.get("course_id")
+    promo_code = data.get("promo_code")
+    status = data.get("status", "active")
+    
+    if not learner_id or not course_id:
+        raise ValueError("กรุณาระบุรหัสผู้เรียนและรหัสคอร์สให้ครบถ้วน")
 
-    # แก้
-def create_enrollment(data):
-    sql = "INSERT INTO enrollment (learner_id, course_id, enroll_date, status, paid_amount, promo_id) VALUES (%s, %s, %s, %s, %s, %s)"
-    params = (
-        data.get("learner_id"),
-        data.get("course_id"),
-        data.get("enroll_date"),
-        data.get("status", "active"),
-        data.get("paid_amount", 0),
-        data.get("promo_id") or None
-    )
+    course_rows = run_query("SELECT price FROM course WHERE course_id = %s", (course_id,))
+    if not course_rows:
+        raise ValueError("ไม่พบรหัสคอร์สนี้ในระบบ")
+    base_price = float(course_rows[0]["price"])
+    
+    promo_id = None
+    discount_pct = 0
+    
+    if promo_code:
+        promo_rows = run_query("SELECT promo_id, discount_pct FROM promotion WHERE promo_code = %s", (promo_code,))
+        if promo_rows:
+            promo_id = promo_rows[0]["promo_id"]
+            discount_pct = float(promo_rows[0]["discount_pct"])
+        else:
+            raise ValueError(f"ไม่พบโค้ดโปรโมชัน '{promo_code}' ในระบบ")
+            
+    paid_amount = base_price - (base_price * discount_pct / 100)
+    
+    sql = """
+        INSERT INTO enrollment (learner_id, course_id, status, paid_amount, promo_id)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+    params = (learner_id, course_id, status, paid_amount, promo_id)
     return run_command(sql, params)
 
-def update_enrollment(enroll_id, data):
-    """แก้ไข การลงทะเบียน ตาม enroll_id"""
-    # TODO: UPDATE enrollment SET ... WHERE enroll_id=%s
-    _todo("update_enrollment")
 
-    # แก้
 def update_enrollment(enroll_id, data):
-    sql = "UPDATE enrollment SET status = %s, paid_amount = %s WHERE enroll_id = %s"
-    params = (
-        data.get("status"),
-        data.get("paid_amount"),
-        enroll_id
-    )
+    """แก้ไข การลงทะเบียน ตาม enroll_id — รองรับการอัปเดตสถานะและคำนวณราคาใหม่ถ้ามีการเปลี่ยนคอร์สหรือโปรโมชัน"""
+    learner_id = data.get("learner_id")
+    course_id = data.get("course_id")
+    promo_code = data.get("promo_code")
+    status = data.get("status", "active")
+    
+    course_rows = run_query("SELECT price FROM course WHERE course_id = %s", (course_id,))
+    if not course_rows:
+        raise ValueError("ไม่พบรหัสคอร์สนี้ในระบบ")
+    base_price = float(course_rows[0]["price"])
+    
+    promo_id = None
+    discount_pct = 0
+    
+    if promo_code:
+        promo_rows = run_query("SELECT promo_id, discount_pct FROM promotion WHERE promo_code = %s", (promo_code,))
+        if promo_rows:
+            promo_id = promo_rows[0]["promo_id"]
+            discount_pct = float(promo_rows[0]["discount_pct"])
+        else:
+            raise ValueError(f"ไม่พบโค้ดโปรโมชัน '{promo_code}' ในระบบ")
+            
+    paid_amount = base_price - (base_price * discount_pct / 100)
+    
+    sql = """
+        UPDATE enrollment 
+        SET learner_id = %s, course_id = %s, status = %s, paid_amount = %s, promo_id = %s
+        WHERE enroll_id = %s
+    """
+    params = (learner_id, course_id, status, paid_amount, promo_id, enroll_id)
     return run_command(sql, params)
 
 def delete_enrollment(enroll_id):
     """ลบ การลงทะเบียน ตาม enroll_id"""
-    # TODO: DELETE FROM enrollment WHERE enroll_id=%s
-    _todo("delete_enrollment")
-
-    # แก้
-def delete_enrollment(enroll_id):
     sql = "DELETE FROM enrollment WHERE enroll_id = %s"
     return run_command(sql, (enroll_id,))
 
@@ -256,35 +252,24 @@ def delete_enrollment(enroll_id):
 #  REPORT (รายงาน — ใช้ JOIN + GROUP BY + subquery)
 # ============================================================
 def report_summary():
-    """ตัวเลขสรุปบนการ์ด dashboard — คืน dict เช่น {"learners": 10, ...}
-    คำใบ้: ใช้ COUNT(*) หลายครั้ง"""
-    # TODO: นับจำนวนรวมต่าง ๆ เพื่อแสดงบนการ์ด
-    _todo("report_summary")
-
-    # แก้
-def report_summary():
-    # นับจำนวนข้อมูลรวมทั้งหมดในแต่ละตาราง เพื่อนำไปแสดงเป็นการ์ดสรุปผลบนหน้า Dashboard
+    """ตัวเลขสรุปบนการ์ด dashboard — นับจำนวนข้อมูลทุกตารางรวมถึงบทเรียน"""
     learners = run_query("SELECT COUNT(*) AS cnt FROM learner")[0]["cnt"]
     courses = run_query("SELECT COUNT(*) AS cnt FROM course")[0]["cnt"]
     enrollments = run_query("SELECT COUNT(*) AS cnt FROM enrollment")[0]["cnt"]
     completed = run_query("SELECT COUNT(*) AS cnt FROM enrollment WHERE status='completed'")[0]["cnt"]
+    lessons = run_query("SELECT COUNT(*) AS cnt FROM lesson")[0]["cnt"]
+    
     return {
         "learners": learners,
         "courses": courses,
         "enrollments": enrollments,
-        "completed": completed
+        "completed": completed,
+        "lessons": lessons
     }
     
 
 def report_popular_courses():
-    """📈 คอร์สยอดนิยม (Most Enrolled)
-    คำใบ้: JOIN enrollment→course, GROUP BY course, COUNT, ORDER BY DESC, LIMIT 5"""
-    # TODO: เขียน SQL รายงานนี้ (เขียน JOIN แบบ explicit INNER JOIN ... ON ...)
-    _todo("report_popular_courses")
-
-    # แก้
-def report_popular_courses():
-    # ใช้ INNER JOIN เชื่อมตารางคอร์สกับประวัติการลงทะเบียนเพื่อนับจำนวนนักเรียน
+    """📈 คอร์สยอดนิยม (Most Enrolled)"""
     sql = """
         SELECT c.course_id, c.title, c.category, COUNT(e.learner_id) AS total_students
         FROM course c
@@ -296,19 +281,11 @@ def report_popular_courses():
     return run_query(sql)
 
 def report_completion_rate():
-    """✅ อัตราการเรียนจบต่อคอร์ส (Completion Rate)
-    คำใบ้: GROUP BY course, นับ completed เทียบทั้งหมด ด้วย SUM(CASE WHEN ...)"""
-    # TODO: เขียน SQL รายงานนี้ (เขียน JOIN แบบ explicit INNER JOIN ... ON ...)
-    _todo("report_completion_rate")
-
-    # แก้
-def report_completion_rate():
-    # ใช้ SUM(CASE WHEN ...) เพื่อแยกนับเฉพาะคนที่เรียนจบ แล้วคำนวณเทียบกับจำนวนทั้งหมดเป็นเปอร์เซ็นต์
+    """✅ อัตราการเรียนจบต่อคอร์ส (Completion Rate)"""
     sql = """
         SELECT c.course_id, c.title,
                COUNT(e.enroll_id) AS total_enrolled,
                SUM(CASE WHEN e.status = 'completed' THEN 1 ELSE 0 END) AS total_completed,
-
                ROUND(SUM(CASE WHEN e.status = 'completed' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(e.enroll_id), 0), 2) AS completion_rate
         FROM course c
         LEFT JOIN enrollment e ON c.course_id = e.course_id
@@ -318,14 +295,7 @@ def report_completion_rate():
 
 
 def report_course_prerequisites():
-    """🔗 คอร์สและวิชาที่ต้องเรียนก่อน (Self-Join)
-    คำใบ้: self-join: course c LEFT JOIN course pre ON c.prerequisite_id = pre.course_id"""
-    # TODO: เขียน SQL รายงานนี้ (เขียน JOIN แบบ explicit INNER JOIN ... ON ...)
-    _todo("report_course_prerequisites")
-
-    # แก้
-def report_course_prerequisites():
-    # ใช้ Self-Join เชื่อมตารางคอร์สเข้าหากับตัวเองผ่าน prerequisite_id เพื่อดึงชื่อวิชาบังคับก่อนออกมาแสดง
+    """🔗 คอร์สและวิชาที่ต้องเรียนก่อน (Self-Join)"""
     sql = """
         SELECT c.course_id, c.title AS course_title, c.category,
                pre.course_id AS prerequisite_id, pre.title AS prerequisite_title
@@ -335,23 +305,32 @@ def report_course_prerequisites():
     return run_query(sql)
 
 
-
-#---------------------------------------------------------------------------------------------------------------
-
-
-#เพิ่มฟังก์ชัน get_all_promotions() เพื่อดึงข้อมูลโปรโมชันทั้งหมด
 # ---------- โปรโมชัน (promotion) ----------
 def get_all_promotions():
     return run_query("SELECT * FROM promotion")
 
-#เพิ่มฟังก์ชัน get_all_lessons_with_course() เพื่อดึงข้อมูลบทเรียนพร้อมชื่อคอร์ส
-# ---------- บทเรียน (lesson) ----------
 
+# ---------- บทเรียน (lesson) ----------
 def get_all_lessons_with_course():
     sql = """
         SELECT l.lesson_id, c.title AS course_title, l.title AS lesson_title, l.seq_no, l.duration_min
         FROM lesson l
         INNER JOIN course c ON l.course_id = c.course_id
         ORDER BY c.course_id, l.seq_no
+    """
+    return run_query(sql)
+
+
+def report_promotion_usage():
+    """📊 รายงานการใช้งานโปรโมชันและยอดส่วนลด (ปรับปรุงรูปแบบตัวเลขให้สวยงาม)"""
+    sql = """
+        SELECT p.promo_id, p.promo_code, p.discount_pct, 
+               COUNT(e.enroll_id) AS total_used,
+               COALESCE(ROUND(SUM(c.price * p.discount_pct / 100), 2), 0.00) AS total_discount_given
+        FROM promotion p
+        LEFT JOIN enrollment e ON p.promo_id = e.promo_id
+        LEFT JOIN course c ON e.course_id = c.course_id
+        GROUP BY p.promo_id, p.promo_code, p.discount_pct
+        ORDER BY total_used DESC
     """
     return run_query(sql)

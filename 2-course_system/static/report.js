@@ -31,3 +31,28 @@ async function loadAll() {
   fillTable("#prereqTable", "#prereqStatus", await api("/api/reports/prerequisites"));
 }
 loadAll();
+
+// ============================================================
+//  [เพิ่มใหม่] โหลดรายงานการใช้งานโปรโมชัน
+//  หน้าที่: เรียก API /api/reports/promotions แล้วสร้างหัวตาราง + แถวข้อมูล
+//           ใส่ลงในตาราง promoReportTable ในหน้า report.html
+// ============================================================
+(async function loadPromoReport() {
+  const st = document.getElementById("promoReportStatus");
+  const table = document.getElementById("promoReportTable");
+  try {
+    const res = await fetch("/api/reports/promotions");
+    const r = await res.json();
+    if (!r.ok) { st.textContent = "⚠️ " + r.error; return; }        // ถ้าหลังบ้าน Error ให้แสดงข้อความ
+    const rows = r.data || [];
+    if (rows.length === 0) { st.textContent = "ยังไม่มีข้อมูลโปรโมชัน"; return; }
+    const cols = Object.keys(rows[0]);                                  // ใช้ชื่อคอลัมน์จากผล SQL เป็นหัวตาราง
+    table.querySelector("thead").innerHTML =
+      "<tr>" + cols.map(c => "<th>" + c + "</th>").join("") + "</tr>";
+    table.querySelector("tbody").innerHTML = rows.map(row =>
+      "<tr>" + cols.map(c => "<td>" + (row[c] ?? "—") + "</td>").join("") + "</tr>"
+    ).join("");
+  } catch (e) {
+    st.textContent = "⚠️ โหลดรายงานไม่สำเร็จ: " + e;
+  }
+})();

@@ -1,6 +1,5 @@
 // ============================================================
-//  app.js  —  ตรรกะหน้าเว็บ (ทำให้เสร็จแล้ว ★ นิสิตไม่ต้องแก้)
-//  ปรับช่องค้นหา/ฟอร์มได้ที่ตัวแปร ENTITIES ด้านล่าง
+//  app.js  —  ตรรกะหน้าเว็บ (อัปเดตฟอร์มการลงทะเบียนให้รองรับโค้ดโปรโมชันเป็นตัวหนังสือ)
 // ============================================================
 const ENTITIES = {
   "lessons": {
@@ -70,13 +69,8 @@ const ENTITIES = {
         "type": "date"
       }
     ]
-  }
-
-
-
-
-
-,"learners": {
+  },
+  "learners": {
     "label": "ผู้เรียน",
     "api": "/api/learners",
     "idKey": "learner_id",
@@ -104,9 +98,13 @@ const ENTITIES = {
         "type": "text"
       },
       {
-        "key": "join_date",
-        "label": "วันที่สมัคร",
-        "type": "date"
+        "key": "member_tier",
+        "label": "ระดับสมาชิก",
+        "type": "select",
+        "options": [
+          "normal",
+          "vip"
+        ]
       }
     ]
   },
@@ -123,7 +121,14 @@ const ENTITIES = {
       {
         "key": "category",
         "label": "หมวดหมู่",
-        "type": "text"
+        "type": "select",
+        "options": [
+          "",
+          "Programming",
+          "Database",
+          "Design",
+          "Business"
+        ]
       }
     ],
     "form": [
@@ -135,7 +140,13 @@ const ENTITIES = {
       {
         "key": "category",
         "label": "หมวดหมู่",
-        "type": "text"
+        "type": "select",
+        "options": [
+          "Programming",
+          "Database",
+          "Design",
+          "Business"
+        ]
       },
       {
         "key": "price",
@@ -170,8 +181,9 @@ const ENTITIES = {
         "type": "select",
         "options": [
           "",
-          "studying",
-          "completed"
+          "active",
+          "completed",
+          "dropped"
         ]
       }
     ],
@@ -186,18 +198,21 @@ const ENTITIES = {
         "label": "รหัสคอร์ส",
         "type": "number"
       },
+      // [แก้ไขจุดที่ 1]: เพิ่มช่องกรอก promo_code เป็นแบบข้อความ (text)
+      // หน้าที่: ให้ผู้ใช้งานสามารถพิมพ์ชื่อโค้ดส่วนลด (เช่น VIP50) ส่งไปให้ระบบหลังบ้านตรวจสอบและแปลงเป็น promo_id ได้โดยตรง
       {
-        "key": "enroll_date",
-        "label": "วันที่ลงทะเบียน",
-        "type": "date"
+        "key": "promo_code",
+        "label": "โค้ดโปรโมชัน (ถ้ามี เช่น VIP50)",
+        "type": "text"
       },
       {
         "key": "status",
         "label": "สถานะ",
         "type": "select",
         "options": [
-          "studying",
-          "completed"
+          "active",
+          "completed",
+          "dropped"
         ]
       }
     ]
@@ -214,7 +229,7 @@ function fieldHtml(f, prefix, value = "") {
   let input;
   if (f.type === "select") {
     input = '<select id="' + prefix + f.key + '">' +
-      f.options.map(o => '<option value="' + o + '"' + (o === value ? " selected" : "") + '>' + (o || "ทั้งหมด") + '</option>').join("") + '</select>';
+      f.options.map(o => '<option value="' + o + '"' + (o === value ? " selected" : "") + '>' + (o || "ทั้งหมด / ไม่มี") + '</option>').join("") + '</select>';
   } else { input = '<input id="' + prefix + f.key + '" type="' + f.type + '" value="' + (value ?? "") + '">'; }
   return '<div class="field"><label>' + f.label + '</label>' + input + '</div>';
 }
@@ -283,5 +298,21 @@ $("#btnClear").onclick = () => buildSearch();
 $("#btnAdd").onclick = () => { editingId = null; openForm("เพิ่มข้อมูลใหม่"); };
 $("#btnSave").onclick = save;
 $("#btnCancel").onclick = () => $("#modal").classList.add("hidden");
+
+
+
+// [แก้ไข]: กำหนดให้ตัวแปร current เริ่มต้นที่ "learners" เสมอเมื่อเปิดหน้าเว็บ
+// หน้าที่: บังคับให้ระบบเลือกแท็บผู้เรียนเป็นค่าเริ่มต้นก่อนเรียกฟังก์ชัน buildSearch()
+current = "learners";
+
+// [แก้ไข]: ค้นหาและทำไฮไลต์ปุ่มแท็บ "ผู้เรียน" ให้มีสถานะ active ทันทีที่โหลดหน้าเว็บ
+document.querySelectorAll(".tab").forEach(t => {
+  if (t.dataset.entity === "learners") t.classList.add("active");
+  else t.classList.remove("active");
+});
+
+
+buildSearch();
+setStatus($("#status"), 'กด "ค้นหา" เพื่อแสดงข้อมูล');
 buildSearch();
 setStatus($("#status"), 'กด "ค้นหา" เพื่อแสดงข้อมูล');
