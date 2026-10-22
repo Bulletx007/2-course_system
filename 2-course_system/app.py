@@ -1,5 +1,7 @@
 # ============================================================
-#  app.py — เว็บแอป Flask (ฉบับแก้ไขตำแหน่ง API รายงานโปรโมชัน)
+#  app.py — เว็บแอป Flask
+#  หน้าที่: รับ request จากหน้าเว็บ (app.js) แล้วเรียกฟังก์ชันใน db.py
+#           ส่งผลกลับเป็น JSON รูปแบบ {"ok": True/False, "data": ..., "error": ...}
 # ============================================================
 from flask import Flask, request, jsonify, render_template
 import db
@@ -8,6 +10,9 @@ app = Flask(__name__)
 
 
 def safe(fn, *args, **kwargs):
+    """ตัวครอบทุก API: ถ้าสำเร็จคืน {"ok": True, "data": ...}
+    ถ้าเกิด Error (รวม ValueError ภาษาไทยที่เรา raise ใน db.py) จะคืน {"ok": False, "error": ...}
+    ให้หน้าเว็บแสดงเป็น alert ได้ แทนที่จะพังเป็นหน้า HTML 500"""
     try:
         return jsonify({"ok": True, "data": fn(*args, **kwargs)})
     except NotImplementedError as e:
@@ -47,6 +52,7 @@ def learner_update(_id):
 def learner_delete(_id):
     return safe(db.delete_learner, _id)
 
+
 # ---- คอร์ส ----
 @app.route("/api/courses", methods=["GET"])
 def courses_list():
@@ -68,6 +74,7 @@ def course_update(_id):
 @app.route("/api/courses/<int:_id>", methods=["DELETE"])
 def course_delete(_id):
     return safe(db.delete_course, _id)
+
 
 # ---- การลงทะเบียน ----
 @app.route("/api/enrollments", methods=["GET"])
@@ -109,64 +116,54 @@ def route_report_completion_rate():
 def route_report_course_prerequisites():
     return safe(db.report_course_prerequisites)
 
-# [แก้ไขตำแหน่ง]: ย้าย API รายงานโปรโมชันมาไว้ในกลุ่มรายงานให้ถูกต้อง
 @app.route("/api/reports/promotions")
 def route_report_promotions():
-    """
-    หน้าที่: สร้าง Endpoint สำหรับดึงข้อมูลรายงานการใช้งานโปรโมชัน 
-    โดยเรียกใช้งานฟังก์ชัน db.report_promotion_usage() และส่งค่ากลับเป็น JSON
-    """
+    """ดึงรายงานการใช้งานโปรโมชัน (เรียก db.report_promotion_usage)"""
     return safe(db.report_promotion_usage)
 
 
 # ============================================================
 #  ★ API สำหรับ โปรโมชัน (Promotions)
+#  [แก้ไขทั้งหมด]: ลบ SQL ที่เขียนเองใน app.py ออก แล้วเรียกฟังก์ชันใน db.py แทน
+#  หน้าที่: ให้ start_date ใส่ CURDATE() อัตโนมัติ, แปลงวันที่เป็น YYYY-MM-DD,
+#           เช็คโค้ดซ้ำ/ส่วนลด/วันหมดอายุ และแสดง Error ภาษาไทยผ่าน safe()
 # ============================================================
 @app.route("/api/promotions", methods=["GET"])
 def api_promotions():
-    promo_code = request.args.get("promo_code")
-    if promo_code:
-        sql = "SELECT * FROM promotion WHERE promo_code LIKE %s"
-        return jsonify({"ok": True, "data": db.run_query(sql, (f"%{promo_code}%",))})
-    return jsonify({"ok": True, "data": db.get_all_promotions()})
+    # [แก้ไข]: เดิมเขียน SQL LIKE เองที่นี่ → ใช้ db.search_promotions (ไม่มีเงื่อนไข = ได้ทั้งหมด)
+    filters = {k: v for k, v in request.args.items() if v}
+    return safe(db.search_promotions, filters)
 
 @app.route("/api/promotions/<int:promo_id>", methods=["GET"])
 def api_get_promotion(promo_id):
-    sql = "SELECT * FROM promotion WHERE promo_id = %s"
-    rows = db.run_query(sql, (promo_id,))
-    if rows:
-        return jsonify({"ok": True, "data": rows[0]})
-    return jsonify({"ok": False, "error": "ไม่พบข้อมูลโปรโมชัน"})
+    # [แก้ไข]: ใช้ db.get_promotion ซึ่งแปลงวันที่เป็น YYYY-MM-DD ช่องปฏิทินในฟอร์มแก้ไขจึงแสดงวันที่เดิมได้
+    return safe(db.get_promotion, promo_id)
 
 @app.route("/api/promotions", methods=["POST"])
 def api_create_promotion():
-    data = request.get_json()
-    sql = "INSERT INTO promotion (promo_code, discount_pct, start_date, end_date, vip_only) VALUES (%s, %s, %s, %s, %s)"
-    params = (data.get("promo_code"), data.get("discount_pct"), data.get("start_date"), data.get("end_date"), 0)
-    db.run_command(sql, params)
-    return jsonify({"ok": True})
+    # [แก้ไข]: เดิม INSERT start_date จากฟอร์ม (ซึ่งตอนนี้ไม่มีแล้ว จึงเป็นค่าว่าง)
+    # → ใช้ db.create_promotion ที่ใส่ CURDATE() เป็นวันที่เริ่มให้อัตโนมัติ
+    return safe(db.create_promotion, request.get_json())
 
 @app.route("/api/promotions/<int:promo_id>", methods=["PUT"])
 def api_update_promotion(promo_id):
-    data = request.get_json()
-    sql = "UPDATE promotion SET promo_code = %s, discount_pct = %s, start_date = %s, end_date = %s WHERE promo_id = %s"
-    params = (data.get("promo_code"), data.get("discount_pct"), data.get("start_date"), data.get("end_date"), promo_id)
-    db.run_command(sql, params)
-    return jsonify({"ok": True})
+    # [แก้ไข]: เดิม UPDATE start_date ทุกครั้ง ทำให้วันที่สร้างเดิมหาย
+    # → ใช้ db.update_promotion ที่ไม่แตะ start_date
+    return safe(db.update_promotion, promo_id, request.get_json())
 
 @app.route("/api/promotions/<int:promo_id>", methods=["DELETE"])
 def api_delete_promotion(promo_id):
-    sql = "DELETE FROM promotion WHERE promo_id = %s"
-    db.run_command(sql, (promo_id,))
-    return jsonify({"ok": True})
+    # [แก้ไข]: ใช้ db.delete_promotion ที่เช็คก่อนว่าโค้ดถูกใช้ลงทะเบียนไปแล้วหรือยัง
+    return safe(db.delete_promotion, promo_id)
 
 
 # ============================================================
 #  ★ API สำหรับ บทเรียน (Lessons)
+#  [แก้ไข]: SQL เหมือนเดิม แต่ครอบด้วย safe() ทุก route
+#  หน้าที่: ถ้าเกิด Error (เช่นใส่รหัสคอร์สที่ไม่มีจริง → 1452) หน้าเว็บจะ alert ข้อความได้ ไม่พังเงียบ
 # ============================================================
-@app.route("/api/lessons", methods=["GET"])
-def api_lessons():
-    title = request.args.get("title")
+def _search_lessons(title):
+    """ค้นหาบทเรียนตามชื่อ ถ้าไม่กรอกชื่อจะได้ทั้งหมดพร้อมชื่อคอร์ส"""
     if title:
         sql = """
             SELECT l.lesson_id, c.title AS course_title, l.title AS lesson_title, l.seq_no, l.duration_min
@@ -175,38 +172,41 @@ def api_lessons():
             WHERE l.title LIKE %s
             ORDER BY c.course_id, l.seq_no
         """
-        return jsonify({"ok": True, "data": db.run_query(sql, (f"%{title}%",))})
-    return jsonify({"ok": True, "data": db.get_all_lessons_with_course()})
+        return db.run_query(sql, (f"%{title}%",))
+    return db.get_all_lessons_with_course()
+
+def _get_lesson(lesson_id):
+    """ดึงบทเรียน 1 รายการ (ใช้ตอนเปิดฟอร์มแก้ไข)"""
+    rows = db.run_query("SELECT * FROM lesson WHERE lesson_id = %s", (lesson_id,))
+    if not rows:
+        raise ValueError("ไม่พบข้อมูลบทเรียน")
+    return rows[0]
+
+@app.route("/api/lessons", methods=["GET"])
+def api_lessons():
+    return safe(_search_lessons, request.args.get("title"))
 
 @app.route("/api/lessons/<int:lesson_id>", methods=["GET"])
 def api_get_lesson(lesson_id):
-    sql = "SELECT * FROM lesson WHERE lesson_id = %s"
-    rows = db.run_query(sql, (lesson_id,))
-    if rows:
-        return jsonify({"ok": True, "data": rows[0]})
-    return jsonify({"ok": False, "error": "ไม่พบข้อมูลบทเรียน"})
+    return safe(_get_lesson, lesson_id)
 
 @app.route("/api/lessons", methods=["POST"])
 def api_create_lesson():
     data = request.get_json()
     sql = "INSERT INTO lesson (course_id, title, seq_no, duration_min) VALUES (%s, %s, %s, %s)"
     params = (data.get("course_id"), data.get("title"), data.get("seq_no"), data.get("duration_min"))
-    db.run_command(sql, params)
-    return jsonify({"ok": True})
+    return safe(db.run_command, sql, params)
 
 @app.route("/api/lessons/<int:lesson_id>", methods=["PUT"])
 def api_update_lesson(lesson_id):
     data = request.get_json()
     sql = "UPDATE lesson SET course_id = %s, title = %s, seq_no = %s, duration_min = %s WHERE lesson_id = %s"
     params = (data.get("course_id"), data.get("title"), data.get("seq_no"), data.get("duration_min"), lesson_id)
-    db.run_command(sql, params)
-    return jsonify({"ok": True})
+    return safe(db.run_command, sql, params)
 
 @app.route("/api/lessons/<int:lesson_id>", methods=["DELETE"])
 def api_delete_lesson(lesson_id):
-    sql = "DELETE FROM lesson WHERE lesson_id = %s"
-    db.run_command(sql, (lesson_id,))
-    return jsonify({"ok": True})
+    return safe(db.run_command, "DELETE FROM lesson WHERE lesson_id = %s", (lesson_id,))
 
 
 if __name__ == "__main__":
